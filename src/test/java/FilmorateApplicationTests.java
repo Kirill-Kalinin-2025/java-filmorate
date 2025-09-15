@@ -12,55 +12,55 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class FilmorateApplicationTests {
 
-	@Autowired
-	private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-	@Autowired
-	private ObjectMapper objectMapper;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-	@Test
-	void filmLifecycleTest() throws Exception {
+    @Test
+    void filmLifecycleTest() throws Exception {
 
-		String filmJson = """
-        {
-            "name": "Кто я",
-            "description": "Бенджамин – молодой компьютерный гений. С детства он мечтает стать супергероем из комиксов и покорить мир. Но в реальном мире он - никто.",
-            "releaseDate": "2014-09-06",
-            "duration": 102
-        }
-        """;
+        String filmJson = """
+                {
+                    "name": "Кто я",
+                    "description": "Бенджамин – молодой компьютерный гений. С детства он мечтает стать супергероем из комиксов и покорить мир. Но в реальном мире он - никто.",
+                    "releaseDate": "2014-09-06",
+                    "duration": 102
+                }
+                """;
 
-		mockMvc.perform(post("/films")
-						.contentType("application/json")
-						.content(filmJson))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").exists());
+        mockMvc.perform(post("/films")
+                        .contentType("application/json")
+                        .content(filmJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists());
 
-		mockMvc.perform(get("/films"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$").isArray())
-				.andExpect(jsonPath("$.length()").value(1));
-	}
+        mockMvc.perform(get("/films"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
 
-	@Test
-	void userLifecycleTest() throws Exception {
-		String userJson = """
-        {
-            "email": "kirya.kalina.06@yandex.ru",
-            "login": "kirill",
-            "birthday": "1999-03-28"
-        }
-        """;
+    @Test
+    void userLifecycleTest() throws Exception {
+        String userJson = """
+                {
+                    "email": "kirya.kalina.06@yandex.ru",
+                    "login": "kirill",
+                    "birthday": "1999-03-28"
+                }
+                """;
 
-		mockMvc.perform(post("/users")
-						.contentType("application/json")
-						.content(userJson))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.name").value("leo"));
+        mockMvc.perform(post("/users")
+                        .contentType("application/json")
+                        .content(userJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("leo"));
 
-		mockMvc.perform(get("/users"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$").isArray())
-				.andExpect(jsonPath("$.length()").value(1));
-	}
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
 }
