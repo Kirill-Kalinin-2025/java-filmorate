@@ -20,6 +20,10 @@ class FilmorateApplicationTests {
     private ObjectMapper objectMapper;
 
     @Test
+    void contextLoads() {
+    }
+
+    @Test
     void filmLifecycleTest() throws Exception {
         String filmJson = """
                  {\s
