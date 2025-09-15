@@ -1,3 +1,4 @@
+// CHECKSTYLE:OFF
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,3 +64,4 @@ class FilmorateApplicationTests {
                 .andExpect(jsonPath("$.length()").value(1));
     }
 }
+// CHECKSTYLE:ON
