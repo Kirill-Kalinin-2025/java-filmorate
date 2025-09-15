@@ -21,12 +21,13 @@ class FilmorateApplicationTests {
     @Test
     void filmLifecycleTest() throws Exception {
         String filmJson = """
-                { "name": "Кто я",
-                    "description": "Бенджамин – молодой компьютерный гений. С детства он мечтает стать супергероем из комиксов и покорить мир. Но в реальном мире он - никто.",
-                    "releaseDate": "2014-09-06",
-                    "duration": 102
-                }
-                """;
+                 {\s
+                 "name": "Кто я",
+                     "description": "Бенджамин – молодой компьютерный гений. Но в реальном мире он - никто.",
+                     "releaseDate": "2014-09-06",
+                     "duration": 102
+                 }
+                \s""";
 
         mockMvc.perform(post("/films")
                         .contentType("application/json")
@@ -43,11 +44,12 @@ class FilmorateApplicationTests {
     @Test
     void userLifecycleTest() throws Exception {
         String userJson = """
-                { "email": "kirya.kalina.06@yandex.ru",
-                    "login": "kirill",
-                    "birthday": "1999-03-28"
-                }
-                """;
+                 {\s
+                 "email": "kirya.kalina.06@yandex.ru",
+                     "login": "kirill",
+                     "birthday": "1999-03-28"
+                 }
+                \s""";
 
         mockMvc.perform(post("/users")
                         .contentType("application/json")
