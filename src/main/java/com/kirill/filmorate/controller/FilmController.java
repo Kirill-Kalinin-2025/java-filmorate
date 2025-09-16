@@ -1,7 +1,7 @@
-package controller;
+package com.kirill.filmorate.controller;
 
-import exception.ValidationException;
-import model.Film;
+import com.kirill.filmorate.exception.ValidationException;
+import com.kirill.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;

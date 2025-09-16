@@ -1,4 +1,4 @@
-package controller;
+package com.kirill.filmorate.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class FilmControllerTest {
+class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    void getAllFilms_ReturnsEmptyList() throws Exception {
-        mockMvc.perform(get("/films"))
+    void getAllUsers_ReturnsEmptyList() throws Exception {
+        mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }

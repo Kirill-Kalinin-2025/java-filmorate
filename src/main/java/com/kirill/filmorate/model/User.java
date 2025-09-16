@@ -1,4 +1,4 @@
-package model;
+package com.kirill.filmorate.model;
 
 import lombok.Data;
 import jakarta.validation.constraints.*;
