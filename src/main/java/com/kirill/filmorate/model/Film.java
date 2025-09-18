@@ -2,6 +2,7 @@ package com.kirill.filmorate.model;
 
 import lombok.Data;
 import jakarta.validation.constraints.*;
+
 import java.time.LocalDate;
 
 @Data
@@ -18,15 +19,16 @@ public class Film {
     @PastOrPresent(message = "Дата релиза не может быть в будущем")
     private LocalDate releaseDate;
 
+    @NotNull(message = "Продолжительность обязательна")
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Integer duration;
 
     @AssertTrue(message = "Дата релиза не может быть раньше 28 декабря 1895 года")
     public boolean isReleaseDateValid() {
         if (releaseDate == null) {
-            return true;
+            return false;
         }
         LocalDate minDate = LocalDate.of(1895, 12, 28);
-        return !releaseDate.isBefore(minDate);
+        return releaseDate.isAfter(minDate) || releaseDate.isEqual(minDate);
     }
 }

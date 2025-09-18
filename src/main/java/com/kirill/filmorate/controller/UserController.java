@@ -5,6 +5,7 @@ import com.kirill.filmorate.model.User;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +28,9 @@ public class UserController {
     public User create(@Valid @RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user);
 
-        processUserCreation(user);
+        setUserNameFromLoginIfEmpty(user);
+        validateEmailUniqueness(user.getEmail(), null);
+
         user.setId(nextId++);
         users.put(user.getId(), user);
         log.info("Пользователь успешно создан с ID: {}", user.getId());
@@ -45,30 +48,36 @@ public class UserController {
             throw new ValidationException("Пользователь с ID " + user.getId() + " не найден");
         }
 
+        setUserNameFromLoginIfEmpty(user);
+        validateEmailUniqueness(user.getEmail(), user.getId());
+
         User existingUser = users.get(user.getId());
         updateUserFields(existingUser, user);
         log.info("Пользователь с ID {} успешно обновлен", user.getId());
         return existingUser;
     }
 
-    private void processUserCreation(User user) {
+    private void setUserNameFromLoginIfEmpty(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             log.info("Имя пользователя не указано, используется логин: {}", user.getLogin());
             user.setName(user.getLogin());
         }
+    }
 
-        // Проверка на уникальность email или логина
+    private void validateEmailUniqueness(String email, Long currentUserId) {
         boolean emailExists = users.values().stream()
-                .anyMatch(u -> u.getEmail().equals(user.getEmail()));
+                .filter(u -> currentUserId == null || !u.getId().equals(currentUserId))
+                .anyMatch(u -> u.getEmail().equals(email));
+
         if (emailExists) {
-            throw new ValidationException("Пользователь с email " + user.getEmail() + " уже существует");
+            throw new ValidationException("Пользователь с email " + email + " уже существует");
         }
     }
 
     private void updateUserFields(User existingUser, User newUser) {
-        if (newUser.getEmail() != null) existingUser.setEmail(newUser.getEmail());
-        if (newUser.getLogin() != null) existingUser.setLogin(newUser.getLogin());
-        if (newUser.getName() != null) existingUser.setName(newUser.getName());
-        if (newUser.getBirthday() != null) existingUser.setBirthday(newUser.getBirthday());
+        existingUser.setEmail(newUser.getEmail());
+        existingUser.setLogin(newUser.getLogin());
+        existingUser.setName(newUser.getName());
+        existingUser.setBirthday(newUser.getBirthday());
     }
 }

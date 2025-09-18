@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +28,6 @@ public class FilmController {
     public Film create(@Valid @RequestBody Film film) {
         log.info("Получен запрос на создание фильма: {}", film);
 
-        validateFilm(film);
         film.setId(nextId++);
         films.put(film.getId(), film);
         log.info("Фильм успешно создан с ID: {}", film.getId());
@@ -53,19 +51,11 @@ public class FilmController {
         return existingFilm;
     }
 
-    private void validateFilm(Film film) {
-        if (film.getReleaseDate() != null) {
-            LocalDate minDate = LocalDate.of(1895, 12, 28);
-            if (film.getReleaseDate().isBefore(minDate)) {
-                throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
-            }
-        }
-    }
-
     private void updateFilmFields(Film existingFilm, Film newFilm) {
-        if (newFilm.getName() != null) existingFilm.setName(newFilm.getName());
-        if (newFilm.getDescription() != null) existingFilm.setDescription(newFilm.getDescription());
-        if (newFilm.getReleaseDate() != null) existingFilm.setReleaseDate(newFilm.getReleaseDate());
-        if (newFilm.getDuration() != null) existingFilm.setDuration(newFilm.getDuration());
+        existingFilm.setName(newFilm.getName());
+        existingFilm.setDescription(newFilm.getDescription() != null && !newFilm.getDescription().isBlank()
+                ? newFilm.getDescription() : existingFilm.getDescription());
+        existingFilm.setReleaseDate(newFilm.getReleaseDate());
+        existingFilm.setDuration(newFilm.getDuration());
     }
 }
