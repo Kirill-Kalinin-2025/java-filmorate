@@ -1,6 +1,5 @@
 package com.kirill.filmorate.storage;
 
-import com.kirill.filmorate.model.Film;
 import com.kirill.filmorate.model.User;
 
 import java.util.Collection;
