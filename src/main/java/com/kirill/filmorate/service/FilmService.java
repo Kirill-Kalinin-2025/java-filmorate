@@ -6,6 +6,7 @@ import com.kirill.filmorate.model.Film;
 import com.kirill.filmorate.storage.FilmStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,9 +38,7 @@ public class FilmService {
         if (film.getId() == null) {
             throw new ValidationException("ID должен быть указан");
         }
-        if (!filmStorage.existsById(film.getId())) {
-            throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
-        }
+        validateFilmExists(film.getId());
         return filmStorage.update(film);
     }
 
@@ -50,25 +49,31 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         validateFilmExists(filmId);
-        userService.validateUserExists(userId); // Проверяем существование пользователя
+        userService.validateUserExists(userId);
 
         Set<Long> filmLikes = likes.computeIfAbsent(filmId, k -> new HashSet<>());
-        if (filmLikes.contains(userId)) {
-            throw new ValidationException("Пользователь уже поставил лайк этому фильму");
-        }
         filmLikes.add(userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
         validateFilmExists(filmId);
-        userService.validateUserExists(userId); // Проверяем существование пользователя
+        userService.validateUserExists(userId);
 
         if (likes.containsKey(filmId)) {
-            likes.get(filmId).remove(userId);
+            boolean removed = likes.get(filmId).remove(userId);
+            if (!removed) {
+                throw new ValidationException("Лайк от пользователя " + userId + " для фильма " + filmId + " не найден");
+            }
+        } else {
+            throw new ValidationException("Лайки для фильма " + filmId + " не найдены");
         }
     }
 
     public Collection<Film> getPopularFilms(int count) {
+        if (count <= 0) {
+            throw new ValidationException("Параметр count должен быть положительным числом");
+        }
+
         return filmStorage.findAll().stream()
                 .sorted((f1, f2) -> Integer.compare(
                         getLikesCount(f2.getId()),

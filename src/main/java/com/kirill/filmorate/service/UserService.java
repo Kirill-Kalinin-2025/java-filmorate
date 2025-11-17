@@ -34,10 +34,7 @@ public class UserService {
         if (user.getId() == null) {
             throw new ValidationException("ID должен быть указан");
         }
-        if (!userStorage.existsById(user.getId())) {
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
-        }
-
+        validateUserExists(user.getId());
         setUserNameFromLoginIfEmpty(user);
         validateEmailUniqueness(user.getEmail(), user.getId());
         return userStorage.update(user);
@@ -52,6 +49,10 @@ public class UserService {
         validateUserExists(userId);
         validateUserExists(friendId);
 
+        if (userId.equals(friendId)) {
+            throw new ValidationException("Пользователь не может добавить сам себя в друзья");
+        }
+
         friendships.computeIfAbsent(userId, k -> new HashSet<>()).add(friendId);
         friendships.computeIfAbsent(friendId, k -> new HashSet<>()).add(userId);
     }
@@ -60,6 +61,11 @@ public class UserService {
         validateUserExists(userId);
         validateUserExists(friendId);
 
+        if (userId.equals(friendId)) {
+            throw new ValidationException("Пользователь не может удалить сам себя из друзей");
+        }
+
+        // Просто удаляем, если связи есть - не бросаем исключение если их нет
         if (friendships.containsKey(userId)) {
             friendships.get(userId).remove(friendId);
         }
@@ -79,6 +85,10 @@ public class UserService {
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
         validateUserExists(userId);
         validateUserExists(otherId);
+
+        if (userId.equals(otherId)) {
+            throw new ValidationException("ID пользователей должны быть разными");
+        }
 
         Set<Long> userFriends = friendships.getOrDefault(userId, new HashSet<>());
         Set<Long> otherFriends = friendships.getOrDefault(otherId, new HashSet<>());
