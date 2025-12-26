@@ -1,83 +1,79 @@
 package com.kirill.filmorate.controller;
 
-import com.kirill.filmorate.exception.ValidationException;
 import com.kirill.filmorate.model.User;
+import com.kirill.filmorate.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private final Map<Long, User> users = new HashMap<>();
-    private long nextId = 1;
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping
     public Collection<User> findAll() {
-        log.info("Получен запрос на получение всех пользователей. Количество пользователей: {}", users.size());
-        return users.values();
+        log.info("Получен запрос на получение всех пользователей");
+        return userService.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public User findById(@PathVariable Long id) {
+        log.info("Получен запрос на получение пользователя с ID: {}", id);
+        return userService.findById(id);
     }
 
     @PostMapping
     public User create(@Valid @RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user);
-
-        setUserNameFromLoginIfEmpty(user);
-        validateEmailUniqueness(user.getEmail(), null);
-
-        user.setId(nextId++);
-        users.put(user.getId(), user);
-        log.info("Пользователь успешно создан с ID: {}", user.getId());
-        return user;
+        User createdUser = userService.create(user);
+        log.info("Пользователь успешно создан с ID: {}", createdUser.getId());
+        return createdUser;
     }
 
     @PutMapping
     public User update(@Valid @RequestBody User user) {
         log.info("Получен запрос на обновление пользователя: {}", user);
-
-        if (user.getId() == null) {
-            throw new ValidationException("ID должен быть указан");
-        }
-        if (!users.containsKey(user.getId())) {
-            throw new ValidationException("Пользователь с ID " + user.getId() + " не найден");
-        }
-
-        setUserNameFromLoginIfEmpty(user);
-        validateEmailUniqueness(user.getEmail(), user.getId());
-
-        User existingUser = users.get(user.getId());
-        updateUserFields(existingUser, user);
-        log.info("Пользователь с ID {} успешно обновлен", user.getId());
-        return existingUser;
+        User updatedUser = userService.update(user);
+        log.info("Пользователь с ID {} успешно обновлен", updatedUser.getId());
+        return updatedUser;
     }
 
-    private void setUserNameFromLoginIfEmpty(User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            log.info("Имя пользователя не указано, используется логин: {}", user.getLogin());
-            user.setName(user.getLogin());
-        }
+    // Новая функциональность: работа с друзьями
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        log.info("Получен запрос на добавление в друзья: пользователь {} добавляет пользователя {}", id, friendId);
+        userService.addFriend(id, friendId);
+        log.info("Пользователи {} и {} теперь друзья", id, friendId);
     }
 
-    private void validateEmailUniqueness(String email, Long currentUserId) {
-        boolean emailExists = users.values().stream()
-                .filter(u -> currentUserId == null || !u.getId().equals(currentUserId))
-                .anyMatch(u -> u.getEmail().equals(email));
-
-        if (emailExists) {
-            throw new ValidationException("Пользователь с email " + email + " уже существует");
-        }
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        log.info("Получен запрос на удаление из друзей: пользователь {} удаляет пользователя {}", id, friendId);
+        userService.removeFriend(id, friendId);
+        log.info("Пользователи {} и {} больше не друзья", id, friendId);
     }
 
-    private void updateUserFields(User existingUser, User newUser) {
-        existingUser.setEmail(newUser.getEmail());
-        existingUser.setLogin(newUser.getLogin());
-        existingUser.setName(newUser.getName());
-        existingUser.setBirthday(newUser.getBirthday());
+    @GetMapping("/{id}/friends")
+    public Collection<User> getFriends(@PathVariable Long id) {
+        log.info("Получен запрос на получение списка друзей пользователя {}", id);
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public Collection<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
+        log.info("Получен запрос на получение общих друзей пользователей {} и {}", id, otherId);
+        return userService.getCommonFriends(id, otherId);
     }
 }
