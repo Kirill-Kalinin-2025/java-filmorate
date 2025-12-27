@@ -6,8 +6,9 @@ import lombok.Data;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.Comparator;
 
 @Data
 public class Film {
@@ -31,7 +32,7 @@ public class Film {
     private MpaRating mpa;
 
     @NotNull(message = "Список жанров не может быть null")
-    private Set<Genre> genres = new HashSet<>();
+    private Set<Genre> genres = new TreeSet<>(Comparator.comparing(Genre::getId));
 
     @AssertTrue(message = "Дата релиза не может быть раньше 28 декабря 1895 года")
     public boolean isReleaseDateValid() {

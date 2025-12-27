@@ -47,7 +47,6 @@ public class FilmService {
 
     public Collection<Film> findAll() {
         Collection<Film> films = filmStorage.findAll();
-        // Заполняем MPA и жанры для всех фильмов
         films.forEach(this::enrichFilmWithData);
         return films;
     }
@@ -76,7 +75,9 @@ public class FilmService {
     }
 
     public Collection<MpaRating> getAllMpaRatings() {
-        return new ArrayList<>(mpaRatings.values());
+        return mpaRatings.values().stream()
+                .sorted(Comparator.comparing(MpaRating::getId))
+                .collect(Collectors.toList());
     }
 
     public MpaRating getMpaRatingById(Long id) {
@@ -85,7 +86,9 @@ public class FilmService {
     }
 
     public Collection<Genre> getAllGenres() {
-        return new ArrayList<>(genres.values());
+        return genres.values().stream()
+                .sorted(Comparator.comparing(Genre::getId))
+                .collect(Collectors.toList());
     }
 
     public Genre getGenreById(Long id) {
@@ -103,7 +106,7 @@ public class FilmService {
         }
 
         if (film.getGenres() != null) {
-            Set<Genre> enrichedGenres = new HashSet<>();
+            Set<Genre> enrichedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
             for (Genre genre : film.getGenres()) {
                 if (genre.getId() != null) {
                     Genre fullGenre = genres.get(genre.getId());
@@ -126,7 +129,7 @@ public class FilmService {
             throw new ValidationException("MPA рейтинг обязателен");
         }
         if (mpa.getId() == null || !mpaRatings.containsKey(mpa.getId())) {
-            throw new ValidationException("MPA рейтинг с ID " + mpa.getId() + " не существует");
+            throw new NotFoundException("MPA рейтинг с ID " + mpa.getId() + " не существует");
         }
     }
 
@@ -146,7 +149,7 @@ public class FilmService {
             }
 
             if (!genres.containsKey(genre.getId())) {
-                throw new ValidationException("Жанр с ID " + genre.getId() + " не существует");
+                throw new NotFoundException("Жанр с ID " + genre.getId() + " не существует");
             }
         }
 

@@ -54,38 +54,12 @@ public class UserService {
             throw new ValidationException("Пользователь не может добавить сам себя в друзья");
         }
 
-        if (friendships.containsKey(userId) &&
-                friendships.get(userId).containsKey(friendId)) {
-            FriendshipStatus existingStatus = friendships.get(userId).get(friendId);
-            if (existingStatus == FriendshipStatus.PENDING) {
-                throw new ValidationException("Запрос на дружбу уже отправлен");
-            } else if (existingStatus == FriendshipStatus.CONFIRMED) {
-                throw new ValidationException("Пользователи уже друзья");
-            }
-        }
+        Map<Long, FriendshipStatus> userFriends = friendships.computeIfAbsent(userId, k -> new HashMap<>());
+        Map<Long, FriendshipStatus> friendFriends = friendships.computeIfAbsent(friendId, k -> new HashMap<>());
 
-        friendships.computeIfAbsent(userId, k -> new HashMap<>())
-                .put(friendId, FriendshipStatus.PENDING);
-        friendships.computeIfAbsent(friendId, k -> new HashMap<>())
-                .put(userId, FriendshipStatus.PENDING);
-    }
-
-    public void confirmFriend(Long userId, Long friendId) {
-        validateUserExists(userId);
-        validateUserExists(friendId);
-
-        if (userId.equals(friendId)) {
-            throw new ValidationException("ID пользователей должны быть разными");
-        }
-
-        if (!friendships.containsKey(userId) ||
-                !friendships.get(userId).containsKey(friendId) ||
-                friendships.get(userId).get(friendId) != FriendshipStatus.PENDING) {
-            throw new ValidationException("Запрос на дружбу не найден");
-        }
-
-        friendships.get(userId).put(friendId, FriendshipStatus.CONFIRMED);
-        friendships.get(friendId).put(userId, FriendshipStatus.CONFIRMED);
+        // Автоматически подтверждаем дружбу (взаимная дружба)
+        userFriends.put(friendId, FriendshipStatus.CONFIRMED);
+        friendFriends.put(userId, FriendshipStatus.CONFIRMED);
     }
 
     public void removeFriend(Long userId, Long friendId) {
@@ -108,15 +82,7 @@ public class UserService {
         validateUserExists(userId);
         Map<Long, FriendshipStatus> userFriends = friendships.getOrDefault(userId, new HashMap<>());
 
-        return userFriends.keySet().stream()
-                .map(this::findById)
-                .collect(Collectors.toList());
-    }
-
-    public Collection<User> getConfirmedFriends(Long userId) {
-        validateUserExists(userId);
-        Map<Long, FriendshipStatus> userFriends = friendships.getOrDefault(userId, new HashMap<>());
-
+        // Возвращаем только CONFIRMED друзей
         return userFriends.entrySet().stream()
                 .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
                 .map(Map.Entry::getKey)
@@ -132,20 +98,23 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
-        Set<Long> userConfirmedFriends = friendships.getOrDefault(userId, new HashMap<>())
+        // Получаем CONFIRMED друзей для обоих пользователей
+        Set<Long> userFriends = friendships.getOrDefault(userId, new HashMap<>())
                 .entrySet().stream()
                 .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-        Set<Long> otherConfirmedFriends = friendships.getOrDefault(otherId, new HashMap<>())
+        Set<Long> otherFriends = friendships.getOrDefault(otherId, new HashMap<>())
                 .entrySet().stream()
                 .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-        return userConfirmedFriends.stream()
-                .filter(otherConfirmedFriends::contains)
+        // Находим пересечение
+        userFriends.retainAll(otherFriends);
+
+        return userFriends.stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
     }
