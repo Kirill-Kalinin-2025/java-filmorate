@@ -174,7 +174,9 @@ friendships
 ```sql
 user_id BIGINT FK >- users.id    # Внешний ключ на пользователя (меньший ID)
 friend_id BIGINT FK >- users.id  # Внешний ключ на друга (больший ID)
+status VARCHAR(10)               # Статус: CONFIRMED (всегда)
 created_at TIMESTAMP             # Дата создания дружбы
-# Составной первичный ключ: (user_id, friend_id) где user_id < friend_id
-# Дружба автоматически взаимная (без статусов подтверждения)
+# Составной первичный ключ: (user_id, friend_id)
+# Ограничение: user_id < friend_id (для предотвращения дублирования)
+# Проверка: user_id != friend_id
 ```

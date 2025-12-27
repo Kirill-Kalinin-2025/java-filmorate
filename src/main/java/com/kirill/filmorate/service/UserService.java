@@ -57,7 +57,10 @@ public class UserService {
         Map<Long, FriendshipStatus> userFriends = friendships.computeIfAbsent(userId, k -> new HashMap<>());
         Map<Long, FriendshipStatus> friendFriends = friendships.computeIfAbsent(friendId, k -> new HashMap<>());
 
-        // Автоматически подтверждаем дружбу (взаимная дружба)
+        if (userFriends.containsKey(friendId) || friendFriends.containsKey(userId)) {
+            throw new ValidationException("Пользователи уже друзья");
+        }
+
         userFriends.put(friendId, FriendshipStatus.CONFIRMED);
         friendFriends.put(userId, FriendshipStatus.CONFIRMED);
     }
@@ -72,9 +75,17 @@ public class UserService {
 
         if (friendships.containsKey(userId)) {
             friendships.get(userId).remove(friendId);
+            // Если у пользователя больше нет друзей, удаляем запись
+            if (friendships.get(userId).isEmpty()) {
+                friendships.remove(userId);
+            }
         }
         if (friendships.containsKey(friendId)) {
             friendships.get(friendId).remove(userId);
+            // Если у друга больше нет друзей, удаляем запись
+            if (friendships.get(friendId).isEmpty()) {
+                friendships.remove(friendId);
+            }
         }
     }
 
@@ -98,7 +109,6 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
-        // Получаем CONFIRMED друзей для обоих пользователей
         Set<Long> userFriends = friendships.getOrDefault(userId, new HashMap<>())
                 .entrySet().stream()
                 .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
@@ -111,7 +121,6 @@ public class UserService {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-        // Находим пересечение
         userFriends.retainAll(otherFriends);
 
         return userFriends.stream()
