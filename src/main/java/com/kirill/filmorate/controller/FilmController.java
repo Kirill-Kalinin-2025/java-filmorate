@@ -1,6 +1,8 @@
 package com.kirill.filmorate.controller;
 
 import com.kirill.filmorate.model.Film;
+import com.kirill.filmorate.model.genre.Genre;
+import com.kirill.filmorate.model.mpa.MpaRating;
 import com.kirill.filmorate.service.FilmService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -49,7 +51,29 @@ public class FilmController {
         return updatedFilm;
     }
 
-    // Новая функциональность: лайки
+    @GetMapping("/mpa")
+    public Collection<MpaRating> getAllMpaRatings() {
+        log.info("Получен запрос на получение всех MPA рейтингов");
+        return filmService.getAllMpaRatings();
+    }
+
+    @GetMapping("/mpa/{id}")
+    public MpaRating getMpaRatingById(@PathVariable Long id) {
+        log.info("Получен запрос на получение MPA рейтинга с ID: {}", id);
+        return filmService.getMpaRatingById(id);
+    }
+
+    @GetMapping("/genres")
+    public Collection<Genre> getAllGenres() {
+        log.info("Получен запрос на получение всех жанров");
+        return filmService.getAllGenres();
+    }
+
+    @GetMapping("/genres/{id}")
+    public Genre getGenreById(@PathVariable Long id) {
+        log.info("Получен запрос на получение жанра с ID: {}", id);
+        return filmService.getGenreById(id);
+    }
 
     @PutMapping("/{id}/like/{userId}")
     public void addLike(@PathVariable Long id, @PathVariable Long userId) {

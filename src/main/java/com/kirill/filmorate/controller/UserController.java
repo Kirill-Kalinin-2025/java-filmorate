@@ -49,13 +49,18 @@ public class UserController {
         return updatedUser;
     }
 
-    // Новая функциональность: работа с друзьями
-
     @PutMapping("/{id}/friends/{friendId}")
     public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("Получен запрос на добавление в друзья: пользователь {} добавляет пользователя {}", id, friendId);
         userService.addFriend(id, friendId);
-        log.info("Пользователи {} и {} теперь друзья", id, friendId);
+        log.info("Пользователь {} отправил запрос на дружбу пользователю {}", id, friendId);
+    }
+
+    @PutMapping("/{id}/friends/{friendId}/confirm")
+    public void confirmFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        log.info("Получен запрос на подтверждение дружбы: пользователь {} подтверждает дружбу с {}", id, friendId);
+        userService.confirmFriend(id, friendId);
+        log.info("Дружба между {} и {} подтверждена", id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
@@ -69,6 +74,18 @@ public class UserController {
     public Collection<User> getFriends(@PathVariable Long id) {
         log.info("Получен запрос на получение списка друзей пользователя {}", id);
         return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/confirmed")
+    public Collection<User> getConfirmedFriends(@PathVariable Long id) {
+        log.info("Получен запрос на получение списка подтвержденных друзей пользователя {}", id);
+        return userService.getConfirmedFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/requests")
+    public Collection<User> getFriendRequests(@PathVariable Long id) {
+        log.info("Получен запрос на получение запросов на дружбу пользователя {}", id);
+        return userService.getFriendRequests(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
