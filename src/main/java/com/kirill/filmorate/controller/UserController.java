@@ -76,18 +76,6 @@ public class UserController {
         return userService.getFriends(id);
     }
 
-    @GetMapping("/{id}/friends/confirmed")
-    public Collection<User> getConfirmedFriends(@PathVariable Long id) {
-        log.info("Получен запрос на получение списка подтвержденных друзей пользователя {}", id);
-        return userService.getConfirmedFriends(id);
-    }
-
-    @GetMapping("/{id}/friends/requests")
-    public Collection<User> getFriendRequests(@PathVariable Long id) {
-        log.info("Получен запрос на получение запросов на дружбу пользователя {}", id);
-        return userService.getFriendRequests(id);
-    }
-
     @GetMapping("/{id}/friends/common/{otherId}")
     public Collection<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
         log.info("Получен запрос на получение общих друзей пользователей {} и {}", id, otherId);

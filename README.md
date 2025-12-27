@@ -69,8 +69,8 @@ users
 id          BIGINT          PRIMARY KEY, AUTO_INCREMENT   # Первичный ключ  
 email       VARCHAR(255)    UNIQUE, NOT NULL              # Уникальный email  
 login       VARCHAR(50)     UNIQUE, NOT NULL              # Логин (без пробелов)  
-name        VARCHAR(100)                                   # Имя для отображения  
-birthday    DATE            NOT NULL                       # Дата рождения  
+name        VARCHAR(100)                                  # Имя для отображения  
+birthday    DATE            NOT NULL                      # Дата рождения  
 ```
 ### РЕЙТИНГИ MPA
 ### Справочная таблица возрастных рейтингов

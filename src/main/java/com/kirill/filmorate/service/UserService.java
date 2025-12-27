@@ -81,7 +81,7 @@ public class UserService {
         if (!friendships.containsKey(userId) ||
                 !friendships.get(userId).containsKey(friendId) ||
                 friendships.get(userId).get(friendId) != FriendshipStatus.PENDING) {
-            throw new ValidationException("Запрос на дружбу не найден или уже подтверждён");
+            throw new ValidationException("Запрос на дружбу не найден");
         }
 
         friendships.get(userId).put(friendId, FriendshipStatus.CONFIRMED);
@@ -119,17 +119,6 @@ public class UserService {
 
         return userFriends.entrySet().stream()
                 .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
-                .map(Map.Entry::getKey)
-                .map(this::findById)
-                .collect(Collectors.toList());
-    }
-
-    public Collection<User> getFriendRequests(Long userId) {
-        validateUserExists(userId);
-        Map<Long, FriendshipStatus> userFriends = friendships.getOrDefault(userId, new HashMap<>());
-
-        return userFriends.entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.PENDING)
                 .map(Map.Entry::getKey)
                 .map(this::findById)
                 .collect(Collectors.toList());
