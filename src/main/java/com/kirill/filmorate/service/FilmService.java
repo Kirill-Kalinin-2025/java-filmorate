@@ -18,7 +18,6 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
-    // Временное хранилище для проверки существования MPA и жанров
     private final Map<Long, MpaRating> mpaRatings = new HashMap<>();
     private final Map<Long, Genre> genres = new HashMap<>();
 

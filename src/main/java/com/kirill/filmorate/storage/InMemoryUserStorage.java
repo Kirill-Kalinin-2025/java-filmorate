@@ -35,7 +35,6 @@ public class InMemoryUserStorage implements UserStorage {
     public void delete(Long id) {
         users.remove(id);
         friendships.remove(id);
-        // Удаляем также все записи, где этот пользователь был другом
         friendships.values().forEach(friendMap -> friendMap.remove(id));
     }
 
@@ -56,7 +55,6 @@ public class InMemoryUserStorage implements UserStorage {
                 .anyMatch(user -> user.getEmail().equals(email));
     }
 
-    // Новые методы для работы с друзьями
     @Override
     public void addFriend(Long userId, Long friendId) {
         // Односторонняя дружба: добавляем только одну запись

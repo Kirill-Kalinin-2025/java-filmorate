@@ -18,7 +18,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     private long nextId = 1;
 
     public InMemoryFilmStorage() {
-        // Инициализируем справочники
         initializeGenres();
         initializeMpaRatings();
     }
@@ -51,7 +50,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Film create(Film film) {
         film.setId(nextId++);
 
-        // Обогащаем MPA полной информацией
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             MpaRating fullMpa = allMpaRatings.get(film.getMpa().getId());
             if (fullMpa != null) {
@@ -61,7 +59,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
         films.put(film.getId(), film);
 
-        // Сохраняем жанры
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             Set<Long> genreIds = film.getGenres().stream()
                     .map(Genre::getId)
@@ -74,7 +71,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
-        // Обогащаем MPA полной информацией
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             MpaRating fullMpa = allMpaRatings.get(film.getMpa().getId());
             if (fullMpa != null) {
@@ -84,7 +80,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
         films.put(film.getId(), film);
 
-        // Обновляем жанры
         filmGenres.remove(film.getId());
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             Set<Long> genreIds = film.getGenres().stream()
@@ -117,7 +112,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         return films.containsKey(id);
     }
 
-    // Метод для обогащения фильма полными объектами жанров
     private Film enrichFilmWithGenres(Film film) {
         if (film == null) return null;
 
@@ -162,7 +156,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         Set<Long> currentGenres = filmGenres.computeIfAbsent(filmId, k -> new HashSet<>());
         currentGenres.addAll(genreIds);
 
-        // Обновляем фильм в мапе, чтобы при следующем получении он был с новыми жанрами
         Film film = films.get(filmId);
         if (film != null) {
             enrichFilmWithGenres(film);
@@ -173,7 +166,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     public void removeAllFilmGenres(Long filmId) {
         filmGenres.remove(filmId);
 
-        // Обновляем фильм в мапе
         Film film = films.get(filmId);
         if (film != null) {
             film.setGenres(new HashSet<>());
