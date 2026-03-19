@@ -3,7 +3,6 @@ package com.kirill.filmorate.service;
 import com.kirill.filmorate.exception.ValidationException;
 import com.kirill.filmorate.exception.NotFoundException;
 import com.kirill.filmorate.model.User;
-import com.kirill.filmorate.model.friendship.FriendshipStatus;
 import com.kirill.filmorate.storage.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
