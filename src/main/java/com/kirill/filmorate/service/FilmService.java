@@ -47,7 +47,9 @@ public class FilmService {
     }
 
     public Collection<Film> findAll() {
-        return filmStorage.findAll();
+        Collection<Film> films = filmStorage.findAll();
+        films.forEach(this::enrichFilmWithData);
+        return films;
     }
 
     public Film create(Film film) {
@@ -67,8 +69,10 @@ public class FilmService {
     }
 
     public Film findById(Long id) {
-        return filmStorage.findById(id)
+        Film film = filmStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
+        enrichFilmWithData(film);
+        return film;
     }
 
     public Collection<MpaRating> getAllMpaRatings() {
@@ -95,7 +99,9 @@ public class FilmService {
         return genre;
     }
 
-    private void enrichFilmWithData(Film film) {
+    private Film enrichFilmWithData(Film film) {
+        if (film == null) return null;
+
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             MpaRating fullMpa = mpaRatings.get(film.getMpa().getId());
             if (fullMpa != null) {
@@ -103,6 +109,21 @@ public class FilmService {
                 film.getMpa().setDescription(fullMpa.getDescription());
             }
         }
+
+        if (film.getGenres() != null) {
+            Set<Genre> enrichedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
+            for (Genre genre : film.getGenres()) {
+                if (genre.getId() != null) {
+                    Genre fullGenre = genres.get(genre.getId());
+                    if (fullGenre != null) {
+                        enrichedGenres.add(new Genre(fullGenre.getId(), fullGenre.getName()));
+                    }
+                }
+            }
+            film.setGenres(enrichedGenres);
+        }
+
+        return film;
     }
 
     private void validateFilm(Film film) {
@@ -115,7 +136,7 @@ public class FilmService {
             throw new ValidationException("MPA рейтинг обязателен");
         }
         if (mpa.getId() == null || !mpaRatings.containsKey(mpa.getId())) {
-            throw new ValidationException("MPA рейтинг с ID " + (mpa.getId() == null ? "null" : mpa.getId()) + " не существует");
+            throw new NotFoundException("MPA рейтинг с ID " + (mpa.getId() == null ? "null" : mpa.getId()) + " не существует");
         }
     }
 
@@ -135,7 +156,7 @@ public class FilmService {
             }
 
             if (!genres.containsKey(genre.getId())) {
-                throw new ValidationException("Жанр с ID " + genre.getId() + " не существует");
+                throw new NotFoundException("Жанр с ID " + genre.getId() + " не существует");
             }
         }
 
@@ -166,6 +187,7 @@ public class FilmService {
                         filmStorage.getLikesCount(f2.getId()),
                         filmStorage.getLikesCount(f1.getId())
                 ))
+                .map(this::enrichFilmWithData)  // Теперь работает, т.к. метод возвращает Film
                 .limit(count)
                 .collect(Collectors.toList());
     }

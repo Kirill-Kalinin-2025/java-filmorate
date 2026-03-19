@@ -3,6 +3,7 @@ package com.kirill.filmorate.service;
 import com.kirill.filmorate.exception.ValidationException;
 import com.kirill.filmorate.exception.NotFoundException;
 import com.kirill.filmorate.model.User;
+import com.kirill.filmorate.model.friendship.FriendshipStatus;
 import com.kirill.filmorate.storage.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
     }
 
+    // Односторонняя дружба
     public void addFriend(Long userId, Long friendId) {
         validateUserExists(userId);
         validateUserExists(friendId);
@@ -85,6 +87,14 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public Collection<User> getConfirmedFriends(Long userId) {
+        validateUserExists(userId);
+        Collection<Long> friendIds = userStorage.getConfirmedFriendIds(userId);
+        return friendIds.stream()
+                .map(this::findById)
+                .collect(Collectors.toList());
+    }
+
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
         validateUserExists(userId);
         validateUserExists(otherId);
@@ -93,13 +103,13 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
-        // Получаем друзей первого пользователя (ТОЛЬКО подтвержденных)
+        // Получаем подтвержденных друзей первого пользователя
         Set<Long> userFriends = new HashSet<>(userStorage.getConfirmedFriendIds(userId));
 
-        // Получаем друзей второго пользователя (ТОЛЬКО подтвержденных)
+        // Получаем подтвержденных друзей второго пользователя
         Set<Long> otherFriends = new HashSet<>(userStorage.getConfirmedFriendIds(otherId));
 
-        // Находим пересечение
+        // Находим пересечение (общих друзей)
         userFriends.retainAll(otherFriends);
 
         return userFriends.stream()

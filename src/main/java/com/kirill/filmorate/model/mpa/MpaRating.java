@@ -23,17 +23,4 @@ public class MpaRating {
     public static final MpaRating PG_13 = new MpaRating(3L, "PG-13", "Детям до 13 лет просмотр не желателен");
     public static final MpaRating R = new MpaRating(4L, "R", "Лицам до 17 лет просматривать фильм можно только в присутствии взрослого");
     public static final MpaRating NC_17 = new MpaRating(5L, "NC-17", "Лицам до 18 лет просмотр запрещён");
-
-    public static MpaRating[] getAllMpaRatings() {
-        return new MpaRating[]{G, PG, PG_13, R, NC_17};
-    }
-
-    public static MpaRating getById(Long id) {
-        for (MpaRating mpa : getAllMpaRatings()) {
-            if (mpa.getId().equals(id)) {
-                return mpa;
-            }
-        }
-        return null;
-    }
 }

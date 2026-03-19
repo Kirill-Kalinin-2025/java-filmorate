@@ -12,13 +12,9 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.sql.*;
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Repository
 @Primary
@@ -82,7 +78,7 @@ public class DbFilmStorage implements FilmStorage {
 
         // Сохраняем жанры
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            addFilmGenres(id, film.getGenres().stream().map(Genre::getId).collect(Collectors.toList()));
+            addFilmGenres(id, film.getGenres().stream().map(Genre::getId).toList());
         }
 
         return findById(id).orElseThrow(() -> new RuntimeException("Ошибка при создании фильма"));
@@ -109,7 +105,7 @@ public class DbFilmStorage implements FilmStorage {
         // Обновляем жанры
         removeAllFilmGenres(film.getId());
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            addFilmGenres(film.getId(), film.getGenres().stream().map(Genre::getId).collect(Collectors.toList()));
+            addFilmGenres(film.getId(), film.getGenres().stream().map(Genre::getId).toList());
         }
 
         return findById(film.getId()).orElseThrow(() -> new NotFoundException("Фильм с ID " + film.getId() + " не найден"));
