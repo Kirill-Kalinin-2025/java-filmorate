@@ -3,6 +3,7 @@ package com.kirill.filmorate.model;
 import com.kirill.filmorate.model.friendship.FriendshipStatus;
 import lombok.Data;
 import jakarta.validation.constraints.*;
+
 import java.time.LocalDate;
 import java.util.Map;
 

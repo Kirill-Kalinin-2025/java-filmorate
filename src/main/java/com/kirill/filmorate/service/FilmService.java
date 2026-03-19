@@ -6,6 +6,7 @@ import com.kirill.filmorate.model.Film;
 import com.kirill.filmorate.model.genre.Genre;
 import com.kirill.filmorate.model.mpa.MpaRating;
 import com.kirill.filmorate.storage.FilmStorage;
+import com.kirill.filmorate.storage.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,15 +16,16 @@ import java.util.stream.Collectors;
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final UserService userService;
-    private final Map<Long, Set<Long>> likes = new HashMap<>();
+    private final UserStorage userStorage;
+
+    // Временное хранилище для проверки существования MPA и жанров
     private final Map<Long, MpaRating> mpaRatings = new HashMap<>();
     private final Map<Long, Genre> genres = new HashMap<>();
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserService userService) {
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
         this.filmStorage = filmStorage;
-        this.userService = userService;
+        this.userStorage = userStorage;
         initializeMpaRatings();
         initializeGenres();
     }
@@ -46,9 +48,7 @@ public class FilmService {
     }
 
     public Collection<Film> findAll() {
-        Collection<Film> films = filmStorage.findAll();
-        films.forEach(this::enrichFilmWithData);
-        return films;
+        return filmStorage.findAll();
     }
 
     public Film create(Film film) {
@@ -68,16 +68,12 @@ public class FilmService {
     }
 
     public Film findById(Long id) {
-        Film film = filmStorage.findById(id)
+        return filmStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
-        enrichFilmWithData(film);
-        return film;
     }
 
     public Collection<MpaRating> getAllMpaRatings() {
-        return mpaRatings.values().stream()
-                .sorted(Comparator.comparing(MpaRating::getId))
-                .collect(Collectors.toList());
+        return new ArrayList<>(mpaRatings.values());
     }
 
     public MpaRating getMpaRatingById(Long id) {
@@ -86,9 +82,7 @@ public class FilmService {
     }
 
     public Collection<Genre> getAllGenres() {
-        return genres.values().stream()
-                .sorted(Comparator.comparing(Genre::getId))
-                .collect(Collectors.toList());
+        return new ArrayList<>(genres.values());
     }
 
     public Genre getGenreById(Long id) {
@@ -97,25 +91,13 @@ public class FilmService {
     }
 
     private void enrichFilmWithData(Film film) {
+        // Заполняем MPA
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             MpaRating fullMpa = mpaRatings.get(film.getMpa().getId());
             if (fullMpa != null) {
                 film.getMpa().setName(fullMpa.getName());
                 film.getMpa().setDescription(fullMpa.getDescription());
             }
-        }
-
-        if (film.getGenres() != null) {
-            Set<Genre> enrichedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
-            for (Genre genre : film.getGenres()) {
-                if (genre.getId() != null) {
-                    Genre fullGenre = genres.get(genre.getId());
-                    if (fullGenre != null) {
-                        enrichedGenres.add(new Genre(fullGenre.getId(), fullGenre.getName()));
-                    }
-                }
-            }
-            film.setGenres(enrichedGenres);
         }
     }
 
@@ -129,7 +111,7 @@ public class FilmService {
             throw new ValidationException("MPA рейтинг обязателен");
         }
         if (mpa.getId() == null || !mpaRatings.containsKey(mpa.getId())) {
-            throw new NotFoundException("MPA рейтинг с ID " + mpa.getId() + " не существует");
+            throw new ValidationException("MPA рейтинг с ID " + (mpa.getId() == null ? "null" : mpa.getId()) + " не существует");
         }
     }
 
@@ -149,7 +131,7 @@ public class FilmService {
             }
 
             if (!genres.containsKey(genre.getId())) {
-                throw new NotFoundException("Жанр с ID " + genre.getId() + " не существует");
+                throw new ValidationException("Жанр с ID " + genre.getId() + " не существует");
             }
         }
 
@@ -160,24 +142,14 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         validateFilmExists(filmId);
-        userService.validateUserExists(userId);
-
-        Set<Long> filmLikes = likes.computeIfAbsent(filmId, k -> new HashSet<>());
-        filmLikes.add(userId);
+        validateUserExists(userId);
+        filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
         validateFilmExists(filmId);
-        userService.validateUserExists(userId);
-
-        if (likes.containsKey(filmId)) {
-            boolean removed = likes.get(filmId).remove(userId);
-            if (!removed) {
-                throw new ValidationException("Лайк от пользователя " + userId + " для фильма " + filmId + " не найден");
-            }
-        } else {
-            throw new ValidationException("Лайки для фильма " + filmId + " не найдены");
-        }
+        validateUserExists(userId);
+        filmStorage.removeLike(filmId, userId);
     }
 
     public Collection<Film> getPopularFilms(int count) {
@@ -187,24 +159,22 @@ public class FilmService {
 
         return filmStorage.findAll().stream()
                 .sorted((f1, f2) -> Integer.compare(
-                        getLikesCount(f2.getId()),
-                        getLikesCount(f1.getId())
+                        filmStorage.getLikesCount(f2.getId()),
+                        filmStorage.getLikesCount(f1.getId())
                 ))
-                .map(film -> {
-                    enrichFilmWithData(film);
-                    return film;
-                })
                 .limit(count)
                 .collect(Collectors.toList());
-    }
-
-    private int getLikesCount(Long filmId) {
-        return likes.getOrDefault(filmId, new HashSet<>()).size();
     }
 
     private void validateFilmExists(Long filmId) {
         if (!filmStorage.existsById(filmId)) {
             throw new NotFoundException("Фильм с ID " + filmId + " не найден");
+        }
+    }
+
+    private void validateUserExists(Long userId) {
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
         }
     }
 }

@@ -3,7 +3,6 @@ package com.kirill.filmorate.service;
 import com.kirill.filmorate.exception.ValidationException;
 import com.kirill.filmorate.exception.NotFoundException;
 import com.kirill.filmorate.model.User;
-import com.kirill.filmorate.model.friendship.FriendshipStatus;
 import com.kirill.filmorate.storage.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,6 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
     private final UserStorage userStorage;
-    private final Map<Long, Map<Long, FriendshipStatus>> friendships = new HashMap<>();
 
     @Autowired
     public UserService(UserStorage userStorage) {
@@ -46,9 +44,6 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
     }
 
-    /**
-     * Отправить запрос на дружбу
-     */
     public void addFriend(Long userId, Long friendId) {
         validateUserExists(userId);
         validateUserExists(friendId);
@@ -57,27 +52,9 @@ public class UserService {
             throw new ValidationException("Пользователь не может добавить сам себя в друзья");
         }
 
-        Map<Long, FriendshipStatus> userFriends = friendships.computeIfAbsent(userId, k -> new HashMap<>());
-        Map<Long, FriendshipStatus> friendFriends = friendships.computeIfAbsent(friendId, k -> new HashMap<>());
-
-        // Проверяем существующие связи
-        if (userFriends.containsKey(friendId)) {
-            FriendshipStatus existingStatus = userFriends.get(friendId);
-            if (existingStatus == FriendshipStatus.PENDING) {
-                throw new ValidationException("Запрос на дружбу уже отправлен");
-            } else if (existingStatus == FriendshipStatus.CONFIRMED) {
-                throw new ValidationException("Пользователи уже друзья");
-            }
-        }
-
-        // Отправляем запрос на дружбу (статус PENDING)
-        userFriends.put(friendId, FriendshipStatus.PENDING);
-        friendFriends.put(userId, FriendshipStatus.PENDING);
+        userStorage.addFriend(userId, friendId);
     }
 
-    /**
-     * Подтвердить дружбу
-     */
     public void confirmFriend(Long userId, Long friendId) {
         validateUserExists(userId);
         validateUserExists(friendId);
@@ -86,22 +63,9 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
-        Map<Long, FriendshipStatus> userFriends = friendships.getOrDefault(userId, new HashMap<>());
-        Map<Long, FriendshipStatus> friendFriends = friendships.getOrDefault(friendId, new HashMap<>());
-
-        // Проверяем, что есть входящий запрос на дружбу
-        if (!friendFriends.containsKey(userId) || friendFriends.get(userId) != FriendshipStatus.PENDING) {
-            throw new ValidationException("Запрос на дружбу не найден");
-        }
-
-        // Подтверждаем дружбу с обеих сторон
-        userFriends.put(friendId, FriendshipStatus.CONFIRMED);
-        friendFriends.put(userId, FriendshipStatus.CONFIRMED);
+        userStorage.confirmFriend(userId, friendId);
     }
 
-    /**
-     * Удалить друга (или отклонить/отменить запрос)
-     */
     public void removeFriend(Long userId, Long friendId) {
         validateUserExists(userId);
         validateUserExists(friendId);
@@ -110,69 +74,17 @@ public class UserService {
             throw new ValidationException("Пользователь не может удалить сам себя из друзей");
         }
 
-        // Удаляем связь с обеих сторон
-        if (friendships.containsKey(userId)) {
-            friendships.get(userId).remove(friendId);
-            if (friendships.get(userId).isEmpty()) {
-                friendships.remove(userId);
-            }
-        }
-        if (friendships.containsKey(friendId)) {
-            friendships.get(friendId).remove(userId);
-            if (friendships.get(friendId).isEmpty()) {
-                friendships.remove(friendId);
-            }
-        }
+        userStorage.removeFriend(userId, friendId);
     }
 
-    /**
-     * Получить список подтвержденных друзей
-     */
     public Collection<User> getFriends(Long userId) {
         validateUserExists(userId);
-        Map<Long, FriendshipStatus> userFriends = friendships.getOrDefault(userId, new HashMap<>());
-
-        // Возвращаем только CONFIRMED друзей
-        return userFriends.entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
-                .map(Map.Entry::getKey)
+        Collection<Long> friendIds = userStorage.getUserFriendIds(userId);
+        return friendIds.stream()
                 .map(this::findById)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить входящие запросы на дружбу (PENDING)
-     */
-    public Collection<User> getFriendRequests(Long userId) {
-        validateUserExists(userId);
-        Map<Long, FriendshipStatus> userFriends = friendships.getOrDefault(userId, new HashMap<>());
-
-        // Возвращаем пользователей, от которых пришли PENDING запросы
-        return userFriends.entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.PENDING)
-                .map(Map.Entry::getKey)
-                .map(this::findById)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Получить исходящие запросы на дружбу (PENDING)
-     */
-    public Collection<User> getSentFriendRequests(Long userId) {
-        validateUserExists(userId);
-
-        // Ищем всех пользователей, которым мы отправили запросы
-        return friendships.entrySet().stream()
-                .filter(entry -> entry.getValue().containsKey(userId) &&
-                        entry.getValue().get(userId) == FriendshipStatus.PENDING)
-                .map(Map.Entry::getKey)
-                .map(this::findById)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Получить общих друзей
-     */
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
         validateUserExists(userId);
         validateUserExists(otherId);
@@ -181,21 +93,9 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
-        // Получаем CONFIRMED друзей для первого пользователя
-        Set<Long> userFriends = friendships.getOrDefault(userId, new HashMap<>())
-                .entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        Set<Long> userFriends = new HashSet<>(userStorage.getConfirmedFriendIds(userId));
+        Set<Long> otherFriends = new HashSet<>(userStorage.getConfirmedFriendIds(otherId));
 
-        // Получаем CONFIRMED друзей для второго пользователя
-        Set<Long> otherFriends = friendships.getOrDefault(otherId, new HashMap<>())
-                .entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-
-        // Находим пересечение (общих друзей)
         userFriends.retainAll(otherFriends);
 
         return userFriends.stream()
@@ -210,13 +110,6 @@ public class UserService {
     }
 
     private void validateEmailUniqueness(String email, Long currentUserId) {
-        if (currentUserId != null) {
-            User currentUser = userStorage.findById(currentUserId).orElse(null);
-            if (currentUser != null && currentUser.getEmail().equals(email)) {
-                return;
-            }
-        }
-
         if (userStorage.existsEmail(email, currentUserId)) {
             throw new ValidationException("Пользователь с email " + email + " уже существует");
         }
