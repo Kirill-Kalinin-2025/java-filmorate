@@ -3,7 +3,6 @@ package com.kirill.filmorate.service;
 import com.kirill.filmorate.exception.ValidationException;
 import com.kirill.filmorate.exception.NotFoundException;
 import com.kirill.filmorate.model.User;
-import com.kirill.filmorate.model.friendship.FriendshipStatus;
 import com.kirill.filmorate.storage.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -103,13 +102,10 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
-        // Получаем подтвержденных друзей первого пользователя
         Set<Long> userFriends = new HashSet<>(userStorage.getConfirmedFriendIds(userId));
 
-        // Получаем подтвержденных друзей второго пользователя
         Set<Long> otherFriends = new HashSet<>(userStorage.getConfirmedFriendIds(otherId));
 
-        // Находим пересечение (общих друзей)
         userFriends.retainAll(otherFriends);
 
         return userFriends.stream()
