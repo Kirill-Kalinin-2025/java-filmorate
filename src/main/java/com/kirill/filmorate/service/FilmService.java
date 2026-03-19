@@ -76,8 +76,11 @@ public class FilmService {
     }
 
     public MpaRating getMpaRatingById(Long id) {
-        return Optional.ofNullable(mpaRatings.get(id))
-                .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + id + " не найден"));
+        MpaRating mpa = mpaRatings.get(id);
+        if (mpa == null) {
+            throw new NotFoundException("MPA рейтинг с ID " + id + " не найден");
+        }
+        return mpa;
     }
 
     public Collection<Genre> getAllGenres() {
@@ -85,12 +88,14 @@ public class FilmService {
     }
 
     public Genre getGenreById(Long id) {
-        return Optional.ofNullable(genres.get(id))
-                .orElseThrow(() -> new NotFoundException("Жанр с ID " + id + " не найден"));
+        Genre genre = genres.get(id);
+        if (genre == null) {
+            throw new NotFoundException("Жанр с ID " + id + " не найден");
+        }
+        return genre;
     }
 
     private void enrichFilmWithData(Film film) {
-        // Заполняем MPA
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             MpaRating fullMpa = mpaRatings.get(film.getMpa().getId());
             if (fullMpa != null) {

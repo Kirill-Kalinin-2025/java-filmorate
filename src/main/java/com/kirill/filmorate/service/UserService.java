@@ -93,9 +93,13 @@ public class UserService {
             throw new ValidationException("ID пользователей должны быть разными");
         }
 
+        // Получаем друзей первого пользователя (ТОЛЬКО подтвержденных)
         Set<Long> userFriends = new HashSet<>(userStorage.getConfirmedFriendIds(userId));
+
+        // Получаем друзей второго пользователя (ТОЛЬКО подтвержденных)
         Set<Long> otherFriends = new HashSet<>(userStorage.getConfirmedFriendIds(otherId));
 
+        // Находим пересечение
         userFriends.retainAll(otherFriends);
 
         return userFriends.stream()
