@@ -54,7 +54,6 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
     }
 
-    // Методы для работы с MPA (через отдельный сервис)
     public Collection<MpaRating> getAllMpaRatings() {
         return mpaRatingStorage.findAll();
     }
@@ -64,7 +63,6 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + id + " не найден"));
     }
 
-    // Методы для работы с жанрами (через отдельный сервис)
     public Collection<Genre> getAllGenres() {
         return genreStorage.findAll();
     }
@@ -74,7 +72,6 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("Жанр с ID " + id + " не найден"));
     }
 
-    // Валидация с оптимизированными запросами
     private void validateFilm(Film film) {
         validateMpa(film.getMpa());
         validateGenres(film.getGenres());
@@ -95,7 +92,6 @@ public class FilmService {
             return;
         }
 
-        // Проверка на дубликаты
         Set<Long> genreIds = genreSet.stream()
                 .map(Genre::getId)
                 .filter(Objects::nonNull)
@@ -105,7 +101,6 @@ public class FilmService {
             throw new ValidationException("Дублирующиеся жанры");
         }
 
-        // Один запрос к БД для проверки всех жанров
         Collection<Genre> existingGenres = genreStorage.findByIds(genreIds);
 
         if (existingGenres.size() != genreIds.size()) {
