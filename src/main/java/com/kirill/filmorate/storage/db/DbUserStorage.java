@@ -75,7 +75,7 @@ public class DbUserStorage implements UserStorage {
             throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
         }
 
-        return findById(user.getId()).orElseThrow(() -> new NotFoundException("Пользователь с ID " + user.getId() + " не найден"));
+        return user;
     }
 
     @Override
@@ -143,6 +143,18 @@ public class DbUserStorage implements UserStorage {
     public Collection<Long> getConfirmedFriendIds(Long userId) {
         String sql = "SELECT friend_id FROM friendships WHERE user_id = ? AND status = 'CONFIRMED'";
         return jdbcTemplate.queryForList(sql, Long.class, userId);
+    }
+
+    @Override
+    public Collection<User> findUsersByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        String sql = "SELECT * FROM users WHERE id IN (" + placeholders + ")";
+
+        return jdbcTemplate.query(sql, this::mapUser, ids.toArray());
     }
 
     private User mapUser(ResultSet rs, int rowNum) throws SQLException {

@@ -1,7 +1,7 @@
 package com.kirill.filmorate.controller;
 
 import com.kirill.filmorate.model.mpa.MpaRating;
-import com.kirill.filmorate.service.FilmService;
+import com.kirill.filmorate.service.MpaRatingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -13,22 +13,22 @@ import java.util.Collection;
 @RequestMapping("/mpa")
 public class MpaController {
 
-    private final FilmService filmService;
+    private final MpaRatingService mpaRatingService;
 
     @Autowired
-    public MpaController(FilmService filmService) {
-        this.filmService = filmService;
+    public MpaController(MpaRatingService mpaRatingService) {
+        this.mpaRatingService = mpaRatingService;
     }
 
     @GetMapping
     public Collection<MpaRating> getAllMpaRatings() {
         log.info("Получен запрос на получение всех MPA рейтингов");
-        return filmService.getAllMpaRatings();
+        return mpaRatingService.getAllMpaRatings();
     }
 
     @GetMapping("/{id}")
     public MpaRating getMpaRatingById(@PathVariable Long id) {
         log.info("Получен запрос на получение MPA рейтинга с ID: {}", id);
-        return filmService.getMpaRatingById(id);
+        return mpaRatingService.getMpaRatingById(id);
     }
 }

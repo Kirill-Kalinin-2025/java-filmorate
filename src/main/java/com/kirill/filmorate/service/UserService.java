@@ -44,7 +44,6 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
     }
 
-    // Односторонняя дружба
     public void addFriend(Long userId, Long friendId) {
         validateUserExists(userId);
         validateUserExists(friendId);
@@ -81,17 +80,23 @@ public class UserService {
     public Collection<User> getFriends(Long userId) {
         validateUserExists(userId);
         Collection<Long> friendIds = userStorage.getUserFriendIds(userId);
-        return friendIds.stream()
-                .map(this::findById)
-                .collect(Collectors.toList());
+
+        if (friendIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return userStorage.findUsersByIds(friendIds);
     }
 
     public Collection<User> getConfirmedFriends(Long userId) {
         validateUserExists(userId);
         Collection<Long> friendIds = userStorage.getConfirmedFriendIds(userId);
-        return friendIds.stream()
-                .map(this::findById)
-                .collect(Collectors.toList());
+
+        if (friendIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return userStorage.findUsersByIds(friendIds);
     }
 
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
@@ -108,9 +113,11 @@ public class UserService {
 
         userFriends.retainAll(otherFriends);
 
-        return userFriends.stream()
-                .map(this::findById)
-                .collect(Collectors.toList());
+        if (userFriends.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return userStorage.findUsersByIds(userFriends);
     }
 
     private void setUserNameFromLoginIfEmpty(User user) {

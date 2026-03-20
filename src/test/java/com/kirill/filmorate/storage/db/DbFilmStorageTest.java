@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@Import(DbFilmStorage.class)
+@Import({DbFilmStorage.class, DbGenreStorage.class, DbMpaRatingStorage.class})
 @ActiveProfiles("test")
 class DbFilmStorageTest {
 

@@ -7,6 +7,8 @@ import com.kirill.filmorate.model.genre.Genre;
 import com.kirill.filmorate.model.mpa.MpaRating;
 import com.kirill.filmorate.storage.FilmStorage;
 import com.kirill.filmorate.storage.UserStorage;
+import com.kirill.filmorate.storage.GenreStorage;
+import com.kirill.filmorate.storage.MpaRatingStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,44 +19,24 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
-
-    private final Map<Long, MpaRating> mpaRatings = new HashMap<>();
-    private final Map<Long, Genre> genres = new HashMap<>();
+    private final GenreStorage genreStorage;
+    private final MpaRatingStorage mpaRatingStorage;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage,
+                       GenreStorage genreStorage, MpaRatingStorage mpaRatingStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
-        initializeMpaRatings();
-        initializeGenres();
-    }
-
-    private void initializeMpaRatings() {
-        mpaRatings.put(1L, new MpaRating(1L, "G", "Нет возрастных ограничений"));
-        mpaRatings.put(2L, new MpaRating(2L, "PG", "Детям рекомендуется смотреть фильм с родителями"));
-        mpaRatings.put(3L, new MpaRating(3L, "PG-13", "Детям до 13 лет просмотр не желателен"));
-        mpaRatings.put(4L, new MpaRating(4L, "R", "Лицам до 17 лет просматривать фильм можно только в присутствии взрослого"));
-        mpaRatings.put(5L, new MpaRating(5L, "NC-17", "Лицам до 18 лет просмотр запрещён"));
-    }
-
-    private void initializeGenres() {
-        genres.put(1L, new Genre(1L, "Комедия"));
-        genres.put(2L, new Genre(2L, "Драма"));
-        genres.put(3L, new Genre(3L, "Мультфильм"));
-        genres.put(4L, new Genre(4L, "Триллер"));
-        genres.put(5L, new Genre(5L, "Документальный"));
-        genres.put(6L, new Genre(6L, "Боевик"));
+        this.genreStorage = genreStorage;
+        this.mpaRatingStorage = mpaRatingStorage;
     }
 
     public Collection<Film> findAll() {
-        Collection<Film> films = filmStorage.findAll();
-        films.forEach(this::enrichFilmWithData);
-        return films;
+        return filmStorage.findAll();
     }
 
     public Film create(Film film) {
         validateFilm(film);
-        enrichFilmWithData(film);
         return filmStorage.create(film);
     }
 
@@ -64,100 +46,72 @@ public class FilmService {
         }
         validateFilmExists(film.getId());
         validateFilm(film);
-        enrichFilmWithData(film);
         return filmStorage.update(film);
     }
 
     public Film findById(Long id) {
-        Film film = filmStorage.findById(id)
+        return filmStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
-        enrichFilmWithData(film);
-        return film;
     }
 
+    // Методы для работы с MPA (через отдельный сервис)
     public Collection<MpaRating> getAllMpaRatings() {
-        return new ArrayList<>(mpaRatings.values());
+        return mpaRatingStorage.findAll();
     }
 
     public MpaRating getMpaRatingById(Long id) {
-        MpaRating mpa = mpaRatings.get(id);
-        if (mpa == null) {
-            throw new NotFoundException("MPA рейтинг с ID " + id + " не найден");
-        }
-        return mpa;
+        return mpaRatingStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + id + " не найден"));
     }
 
+    // Методы для работы с жанрами (через отдельный сервис)
     public Collection<Genre> getAllGenres() {
-        return new ArrayList<>(genres.values());
+        return genreStorage.findAll();
     }
 
     public Genre getGenreById(Long id) {
-        Genre genre = genres.get(id);
-        if (genre == null) {
-            throw new NotFoundException("Жанр с ID " + id + " не найден");
-        }
-        return genre;
+        return genreStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Жанр с ID " + id + " не найден"));
     }
 
-    private Film enrichFilmWithData(Film film) {
-        if (film == null) return null;
-
-        if (film.getMpa() != null && film.getMpa().getId() != null) {
-            MpaRating fullMpa = mpaRatings.get(film.getMpa().getId());
-            if (fullMpa != null) {
-                film.getMpa().setName(fullMpa.getName());
-                film.getMpa().setDescription(fullMpa.getDescription());
-            }
-        }
-
-        if (film.getGenres() != null) {
-            Set<Genre> enrichedGenres = new TreeSet<>(Comparator.comparing(Genre::getId));
-            for (Genre genre : film.getGenres()) {
-                if (genre.getId() != null) {
-                    Genre fullGenre = genres.get(genre.getId());
-                    if (fullGenre != null) {
-                        enrichedGenres.add(new Genre(fullGenre.getId(), fullGenre.getName()));
-                    }
-                }
-            }
-            film.setGenres(enrichedGenres);
-        }
-
-        return film;
-    }
-
+    // Валидация с оптимизированными запросами
     private void validateFilm(Film film) {
         validateMpa(film.getMpa());
         validateGenres(film.getGenres());
     }
 
     private void validateMpa(MpaRating mpa) {
-        if (mpa == null) {
+        if (mpa == null || mpa.getId() == null) {
             throw new ValidationException("MPA рейтинг обязателен");
         }
-        if (mpa.getId() == null || !mpaRatings.containsKey(mpa.getId())) {
-            throw new NotFoundException("MPA рейтинг с ID " + (mpa.getId() == null ? "null" : mpa.getId()) + " не существует");
+
+        if (mpaRatingStorage.findById(mpa.getId()).isEmpty()) {
+            throw new NotFoundException("MPA рейтинг с ID " + mpa.getId() + " не существует");
         }
     }
 
     private void validateGenres(Set<Genre> genreSet) {
-        if (genreSet == null) {
+        if (genreSet == null || genreSet.isEmpty()) {
             return;
         }
 
-        Set<Long> genreIds = new HashSet<>();
-        for (Genre genre : genreSet) {
-            if (genre == null || genre.getId() == null) {
-                throw new ValidationException("Жанр не может быть null или без ID");
-            }
+        // Проверка на дубликаты
+        Set<Long> genreIds = genreSet.stream()
+                .map(Genre::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-            if (!genreIds.add(genre.getId())) {
-                throw new ValidationException("Дублирующийся жанр с ID " + genre.getId());
-            }
+        if (genreIds.size() != genreSet.size()) {
+            throw new ValidationException("Дублирующиеся жанры");
+        }
 
-            if (!genres.containsKey(genre.getId())) {
-                throw new NotFoundException("Жанр с ID " + genre.getId() + " не существует");
-            }
+        // Один запрос к БД для проверки всех жанров
+        Collection<Genre> existingGenres = genreStorage.findByIds(genreIds);
+
+        if (existingGenres.size() != genreIds.size()) {
+            Set<Long> existingIds = existingGenres.stream().map(Genre::getId).collect(Collectors.toSet());
+            genreIds.removeAll(existingIds);
+            throw new NotFoundException("Жанр с ID " + genreIds.iterator().next() + " не существует");
         }
 
         if (genreSet.size() > 5) {
@@ -165,6 +119,7 @@ public class FilmService {
         }
     }
 
+    // Методы для лайков
     public void addLike(Long filmId, Long userId) {
         validateFilmExists(filmId);
         validateUserExists(userId);
@@ -182,14 +137,8 @@ public class FilmService {
             throw new ValidationException("Параметр count должен быть положительным числом");
         }
 
-        return filmStorage.findAll().stream()
-                .sorted((f1, f2) -> Integer.compare(
-                        filmStorage.getLikesCount(f2.getId()),
-                        filmStorage.getLikesCount(f1.getId())
-                ))
-                .map(this::enrichFilmWithData)  // Теперь работает, т.к. метод возвращает Film
-                .limit(count)
-                .collect(Collectors.toList());
+        // Один запрос к БД для получения популярных фильмов
+        return filmStorage.findPopularFilms(count);
     }
 
     private void validateFilmExists(Long filmId) {

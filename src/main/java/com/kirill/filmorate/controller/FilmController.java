@@ -4,6 +4,8 @@ import com.kirill.filmorate.model.Film;
 import com.kirill.filmorate.model.genre.Genre;
 import com.kirill.filmorate.model.mpa.MpaRating;
 import com.kirill.filmorate.service.FilmService;
+import com.kirill.filmorate.service.GenreService;
+import com.kirill.filmorate.service.MpaRatingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +19,14 @@ import java.util.Collection;
 public class FilmController {
 
     private final FilmService filmService;
+    private final GenreService genreService;
+    private final MpaRatingService mpaRatingService;
 
     @Autowired
-    public FilmController(FilmService filmService) {
+    public FilmController(FilmService filmService, GenreService genreService, MpaRatingService mpaRatingService) {
         this.filmService = filmService;
+        this.genreService = genreService;
+        this.mpaRatingService = mpaRatingService;
     }
 
     @GetMapping
@@ -54,25 +60,25 @@ public class FilmController {
     @GetMapping("/mpa")
     public Collection<MpaRating> getAllMpaRatings() {
         log.info("Получен запрос на получение всех MPA рейтингов");
-        return filmService.getAllMpaRatings();
+        return mpaRatingService.getAllMpaRatings();
     }
 
     @GetMapping("/mpa/{id}")
     public MpaRating getMpaRatingById(@PathVariable Long id) {
         log.info("Получен запрос на получение MPA рейтинга с ID: {}", id);
-        return filmService.getMpaRatingById(id);
+        return mpaRatingService.getMpaRatingById(id);
     }
 
     @GetMapping("/genres")
     public Collection<Genre> getAllGenres() {
         log.info("Получен запрос на получение всех жанров");
-        return filmService.getAllGenres();
+        return genreService.getAllGenres();
     }
 
     @GetMapping("/genres/{id}")
     public Genre getGenreById(@PathVariable Long id) {
         log.info("Получен запрос на получение жанра с ID: {}", id);
-        return filmService.getGenreById(id);
+        return genreService.getGenreById(id);
     }
 
     @PutMapping("/{id}/like/{userId}")

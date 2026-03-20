@@ -31,4 +31,6 @@ public interface FilmStorage {
     void removeAllFilmGenres(Long filmId);
 
     Collection<Long> getFilmGenreIds(Long filmId);
+
+    Collection<Film> findPopularFilms(int count);
 }

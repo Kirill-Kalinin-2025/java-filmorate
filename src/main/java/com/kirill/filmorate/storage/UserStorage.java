@@ -31,4 +31,6 @@ public interface UserStorage {
     Collection<Long> getPendingFriendIds(Long userId);
 
     Collection<Long> getConfirmedFriendIds(Long userId);
+
+    Collection<User> findUsersByIds(Collection<Long> ids);
 }
